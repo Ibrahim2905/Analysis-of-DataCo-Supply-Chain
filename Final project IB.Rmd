@@ -1,0 +1,153 @@
+---
+title: "Analysis of DataCo Supply chain"
+author: "Ibrahim"
+date: "2023-04-11"
+output:
+  word_document: default
+  html_document: default
+---
+
+
+#Load the required libraries
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(RColorBrewer)
+library(plotrix)
+library(lattice)
+```
+
+#Read CSV file and load it in a data frame
+We can see top elements of the data
+```{r}
+#Reading the dataset
+supply_chain = read.csv('C:/Users/Lenovo/OneDrive/Documents/directory files/DataCoSupplyChainDataset.csv')
+
+head(supply_chain)
+#View(supply_chain)
+```
+
+### Check the structure of the data frame
+We can see that the data is mix of Int and Chars.
+```{r}
+str(supply_chain)
+colnames(supply_chain)  # column names
+```
+
+### checking NA values
+There are 336201 NA values in Product Description and 
+Order Zipcode columns.
+```{r}
+colSums(is.na(supply_chain))
+sum(is.na(supply_chain))
+
+```
+#Deleting null values
+```{r}
+supply_chain <- supply_chain[, -which(names(supply_chain) %in% c("Order.Zipcode", "Product.Description"))]
+#supply_chain
+```
+
+#Checking null values
+```{r}
+#colSums(is.na(supply_chain))
+sum(is.na(supply_chain))
+```
+
+#Order Item Discount Distribution
+```{r}
+ggplot(supply_chain, aes(x = Order.Item.Discount)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(title = "Order Item Discount Distribution",
+       x = "Order Item Discount",
+       y = "Count")
+```
+
+#Count of mode of transaction
+```{r}
+type_count <- table(supply_chain$Type)
+type_count
+```
+
+#Pie chart on Count of mode of transaction
+```{r}
+pie(type_count)
+title(main = "Count of Mode of Transaction" )
+```
+
+#Taking only 10000 values to generate graphs quickly
+```{r}
+supply_chain_sample <- sample_n(supply_chain, 1000)
+#supply_chain_sample
+```
+
+#Calculating Avg. number of days to deliver
+```{r}
+mean(supply_chain$Days.for.shipping..real.)  #average time to delivery is 3-4 days
+```
+
+#Showing average time delivery in a plot
+```{r}
+bwplot(~Days.for.shipping..real. , data=supply_chain)
+#title(main = "Avg. number of days to deliver")
+```
+
+#Bar graph on Order Status
+```{r}
+ggplot(data = supply_chain, aes(x = Order.Status)) +
+  geom_histogram(stat = "count", fill = "steelblue", color = "black") +
+  ggtitle("Order Status") +
+  xlab("Order Status") +
+  ylab("Frequency")
+```
+#Number of Orders from different product categories between shipping modes
+```{r}
+# Subset data for each shipping mode
+first_class_department <- subset(supply_chain, Shipping.Mode == "First Class")
+second_class_department <- subset(supply_chain, Shipping.Mode == "Second Class")
+standard_class_department <- subset(supply_chain, Shipping.Mode == "Standard Class")
+same_day_department <- subset(supply_chain, Shipping.Mode == "Same Day")
+
+# Aggregate data for each department
+department <- aggregate(cbind(number = Delivery.Status) ~ Department.Name, data = supply_chain, FUN = function(x) length(x))
+first_class_department <- aggregate(cbind(number = Delivery.Status) ~ Department.Name, data = first_class_department, FUN = function(x) length(x))
+second_class_department <- aggregate(cbind(number = Delivery.Status) ~ Department.Name, data = second_class_department, FUN = function(x) length(x))
+standard_class_department <- aggregate(cbind(number = Delivery.Status) ~ Department.Name, data = standard_class_department, FUN = function(x) length(x))
+same_day_department <- aggregate(cbind(number = Delivery.Status) ~ Department.Name, data = same_day_department, FUN = function(x) length(x))
+
+# Create plot
+fig <- ggplot() +
+  geom_line(data = department, aes(x = Department.Name, y = number, group = 1), size = 1) +
+  labs(title = "Total number of orders from different product categories",
+       x = "Department Name",
+       y = "Number of Orders") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_wrap(~ "", nrow = 1)
+
+# Example of using group aesthetic in geom_line()
+fig2 <- ggplot() +
+  geom_line(data = first_class_department, aes(x = Department.Name, y = number, color = "First Class", group = 1), size = 1) +
+  geom_line(data = second_class_department, aes(x = Department.Name, y = number, color = "Second Class", group = 1), size = 1) +
+  geom_line(data = standard_class_department, aes(x = Department.Name, y = number, color = "Standard Class", group = 1), size = 1) +
+  geom_line(data = same_day_department, aes(x = Department.Name, y = number, color = "Same Day", group = 1), size = 1) +
+  labs(title = "Number of Orders from different product categories between shipping modes",
+       x = "Department Name",
+       y = "Number of Orders",
+       color = "Shipping Mode") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  facet_wrap(~ "", nrow = 1) +
+  scale_color_manual(values = c("First Class" = "blue", "Second Class" = "green", "Standard Class" = "red", "Same Day" = "purple"))
+
+print(fig2)
+
+# Display plots
+print(fig)
+#print(fig2)
+```
+
+```{r}
+summary(supply_chain)
+```
+
+
